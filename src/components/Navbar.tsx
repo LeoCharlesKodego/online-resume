@@ -14,6 +14,7 @@ const navLinks = [
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const profileImageUrl = `${import.meta.env.BASE_URL}profile.png`;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,7 +36,15 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           <div className="flex-shrink-0">
-            <a href="#home" className="text-2xl font-bold text-gradient tracking-tighter">
+            <a href="#home" className="flex items-center gap-3 text-2xl font-bold text-gradient tracking-tighter">
+              <span className="relative">
+                <span className="absolute -inset-1 rounded-full bg-gradient-to-tr from-primary via-blue-500 to-cyan-400 blur opacity-50"></span>
+                <img
+                  src={profileImageUrl}
+                  alt="Leo Charles Quibuyen"
+                  className="relative w-9 h-9 rounded-full object-cover border border-white/10"
+                />
+              </span>
               LCQ<span className="text-white">.</span>
             </a>
           </div>
