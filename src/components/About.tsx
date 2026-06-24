@@ -25,6 +25,8 @@ const features = [
 ];
 
 const About = () => {
+  const profileImageUrl = `${import.meta.env.BASE_URL}profile.png`;
+
   return (
     <section id="about" className="py-24 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -39,6 +41,31 @@ const About = () => {
           <p className="text-slate-400 max-w-2xl mx-auto">
             A practical problem solver blending traditional software engineering with modern AI workflows.
           </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="relative mb-12 overflow-hidden rounded-3xl border border-slate-700/50 glass-card"
+        >
+          <div
+            className="h-48 sm:h-56 md:h-64 w-full bg-center bg-cover"
+            style={{ backgroundImage: `url(${profileImageUrl})` }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-dark-bg via-dark-bg/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-dark-bg via-transparent to-dark-bg/40" />
+          <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-primary/20 blur-[70px]" />
+          <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-slate-200">
+              <span className="h-2 w-2 rounded-full bg-primary glow" />
+              Puerto Princesa City, Palawan, Philippines
+            </div>
+            <p className="mt-3 max-w-2xl text-slate-300 text-lg leading-relaxed">
+              Building practical systems through AI-assisted development and data-driven decision making.
+            </p>
+          </div>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
