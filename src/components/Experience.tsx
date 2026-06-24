@@ -47,7 +47,6 @@ const Experience = () => {
         </motion.div>
 
         <div className="relative">
-          {/* Timeline Line */}
           <div className="absolute left-0 md:left-1/2 transform md:-translate-x-1/2 top-0 bottom-0 w-px bg-slate-800"></div>
 
           <div className="space-y-12">
@@ -62,10 +61,8 @@ const Experience = () => {
                   index % 2 === 0 ? 'md:flex-row-reverse' : ''
                 }`}
               >
-                {/* Timeline Dot */}
                 <div className="absolute left-0 md:left-1/2 transform -translate-x-[5px] md:-translate-x-1/2 w-3 h-3 rounded-full bg-primary ring-4 ring-dark-bg z-10"></div>
 
-                {/* Content Card */}
                 <div className={`w-full md:w-1/2 pl-8 md:pl-0 ${
                   index % 2 === 0 ? 'md:pl-12' : 'md:pr-12'
                 }`}>

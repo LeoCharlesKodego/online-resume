@@ -51,7 +51,6 @@ const itemVariants = {
 const Skills = () => {
   return (
     <section id="skills" className="py-24 relative overflow-hidden">
-      {/* Background decoration */}
       <div className="absolute top-1/3 right-0 w-96 h-96 bg-primary/5 blur-[120px] rounded-full pointer-events-none"></div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">

@@ -8,8 +8,7 @@ const Hero = () => {
     <section id="home" className="min-h-screen flex items-center pt-20 overflow-hidden relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          
-          {/* Left Side: Content */}
+
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -52,10 +51,16 @@ const Hero = () => {
             </p>
 
             <div className="flex flex-wrap gap-4 pt-4">
-              <a href="#projects" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary hover:bg-primary-light text-white font-medium transition-all glow">
+              <a
+                href="#projects"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary hover:bg-primary-light text-white font-medium transition-all glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg"
+              >
                 View My Work <FiArrowRight />
               </a>
-              <a href="#contact" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg glass hover:bg-dark-border text-slate-300 font-medium transition-all">
+              <a
+                href="#contact"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg glass hover:bg-dark-border text-slate-300 font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg"
+              >
                 Contact Me
               </a>
             </div>
@@ -68,14 +73,12 @@ const Hero = () => {
             </div>
           </motion.div>
 
-          {/* Right Side: Floating Code Editor */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
             className="relative hidden lg:block"
           >
-            {/* Background Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-primary/20 blur-[100px] rounded-full"></div>
             
             <motion.div
@@ -83,7 +86,6 @@ const Hero = () => {
               transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
               className="glass rounded-xl overflow-hidden shadow-2xl border border-slate-700/50 relative z-10"
             >
-              {/* Editor Header */}
               <div className="bg-slate-900/80 px-4 py-3 border-b border-slate-700/50 flex items-center gap-2">
                 <div className="flex gap-2">
                   <div className="w-3 h-3 rounded-full bg-rose-500"></div>
@@ -95,7 +97,6 @@ const Hero = () => {
                 </div>
               </div>
               
-              {/* Editor Content */}
               <div className="p-6 font-mono text-sm leading-relaxed overflow-x-auto">
                 <pre className="text-slate-300">
                   <code className="text-primary-light">const</code> <code className="text-amber-300">developer</code> <code className="text-blue-400">=</code> {'{'}
@@ -142,7 +143,7 @@ const SocialLink = ({ href, icon, label }: { href: string; icon: React.ReactNode
     target="_blank"
     rel="noopener noreferrer"
     aria-label={label}
-    className="text-slate-400 hover:text-primary transition-colors hover:scale-110 transform duration-200"
+    className="text-slate-400 hover:text-primary transition-colors hover:scale-110 transform duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg rounded"
   >
     {icon}
   </a>

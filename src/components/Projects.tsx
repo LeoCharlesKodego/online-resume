@@ -86,7 +86,6 @@ const Projects = () => {
           </p>
         </motion.div>
 
-        {/* Filter Toggle */}
         <div className="flex justify-center mb-12">
           <div className="glass p-1 rounded-lg inline-flex">
             <button
@@ -95,7 +94,7 @@ const Projects = () => {
                 filter === 'vibe' 
                   ? 'bg-primary text-white shadow-lg' 
                   : 'text-slate-400 hover:text-white'
-              }`}
+              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg`}
             >
               <FiCpu /> Vibe-Coded Projects
             </button>
@@ -105,14 +104,13 @@ const Projects = () => {
                 filter === 'traditional' 
                   ? 'bg-slate-700 text-white shadow-lg' 
                   : 'text-slate-400 hover:text-white'
-              }`}
+              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg`}
             >
               <FiCode /> Traditional Development
             </button>
           </div>
         </div>
 
-        {/* Projects Grid */}
         <motion.div layout className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <AnimatePresence mode="popLayout">
             {filteredProjects.map((project) => (
@@ -130,6 +128,8 @@ const Projects = () => {
                   <img 
                     src={project.image} 
                     alt={project.title} 
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                   />
                   <div className="absolute top-4 left-4 z-20 flex flex-wrap gap-2">
@@ -182,11 +182,23 @@ const Projects = () => {
                   </div>
 
                   <div className="flex items-center gap-4 mt-auto pt-4 border-t border-slate-800">
-                    <a href={project.github} target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-white flex items-center gap-2 text-sm font-medium transition-colors">
-                      <FiGithub size={18} /> Source Code
-                    </a>
+                    {project.github !== '#' && (
+                      <a
+                        href={project.github}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-slate-300 hover:text-white flex items-center gap-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg rounded"
+                      >
+                        <FiGithub size={18} /> Source Code
+                      </a>
+                    )}
                     {project.demo !== '#' && (
-                      <a href={project.demo} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary-light flex items-center gap-2 text-sm font-medium transition-colors">
+                      <a
+                        href={project.demo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:text-primary-light flex items-center gap-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg rounded"
+                      >
                         <FiExternalLink size={18} /> Live Demo
                       </a>
                     )}

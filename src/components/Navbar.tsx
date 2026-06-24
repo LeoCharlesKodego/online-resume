@@ -36,12 +36,17 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           <div className="flex-shrink-0">
-            <a href="#home" className="flex items-center gap-3 text-2xl font-bold text-gradient tracking-tighter">
+            <a
+              href="#home"
+              className="flex items-center gap-3 text-2xl font-bold text-gradient tracking-tighter focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg rounded-full"
+            >
               <span className="relative">
                 <span className="absolute -inset-1 rounded-full bg-gradient-to-tr from-primary via-blue-500 to-cyan-400 blur opacity-50"></span>
                 <img
                   src={profileImageUrl}
                   alt="Leo Charles Quibuyen"
+                  loading="lazy"
+                  decoding="async"
                   className="relative w-9 h-9 rounded-full object-cover border border-white/10"
                 />
               </span>
@@ -49,14 +54,13 @@ const Navbar = () => {
             </a>
           </div>
           
-          {/* Desktop Nav */}
           <div className="hidden md:flex items-center space-x-8">
             <div className="flex space-x-6">
               {navLinks.map((link) => (
                 <a
                   key={link.name}
                   href={link.href}
-                  className="text-sm font-medium text-slate-300 hover:text-primary transition-colors"
+                  className="text-sm font-medium text-slate-300 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg rounded"
                 >
                   {link.name}
                 </a>
@@ -64,11 +68,12 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-slate-300 hover:text-white focus:outline-none"
+              className="text-slate-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg rounded"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
             </button>
@@ -76,7 +81,6 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Nav */}
       {mobileMenuOpen && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
@@ -89,7 +93,7 @@ const Navbar = () => {
                 key={link.name}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-primary hover:bg-dark-card"
+                className="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-primary hover:bg-dark-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg"
               >
                 {link.name}
               </a>

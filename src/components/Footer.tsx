@@ -41,7 +41,7 @@ const SocialIcon = ({ href, icon }: { href: string; icon: React.ReactNode }) => 
     href={href}
     target="_blank"
     rel="noopener noreferrer"
-    className="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center text-slate-400 hover:bg-primary/20 hover:text-primary transition-colors border border-slate-700 hover:border-primary/50"
+    className="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center text-slate-400 hover:bg-primary/20 hover:text-primary transition-colors border border-slate-700 hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg"
   >
     {icon}
   </a>

@@ -30,7 +30,6 @@
   }
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -46,4 +45,9 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #7C3AED;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(124, 58, 237, 0.75);
+  outline-offset: 2px;
 }

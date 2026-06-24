@@ -69,7 +69,6 @@ const About = () => {
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          {/* Summary Details */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -107,7 +106,6 @@ const About = () => {
             </div>
           </motion.div>
 
-          {/* Feature Grid */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}

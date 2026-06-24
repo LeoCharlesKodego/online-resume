@@ -4,7 +4,6 @@ import { FiMail, FiMapPin, FiBriefcase, FiArrowRight } from 'react-icons/fi';
 const Contact = () => {
   return (
     <section id="contact" className="py-24 relative overflow-hidden">
-      {/* Background decoration */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-64 bg-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -38,7 +37,10 @@ const Contact = () => {
                 </div>
                 <div>
                   <p className="text-sm text-slate-400 mb-1">Email</p>
-                  <a href="mailto:chryslee18@gmail.com" className="text-white hover:text-primary transition-colors font-medium">
+                  <a
+                    href="mailto:chryslee18@gmail.com"
+                    className="text-white hover:text-primary transition-colors font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg rounded"
+                  >
                     chryslee18@gmail.com
                   </a>
                 </div>
@@ -85,7 +87,7 @@ const Contact = () => {
             
             <a 
               href="mailto:chryslee18@gmail.com?subject=Project Inquiry - Portfolio" 
-              className="inline-flex items-center justify-center gap-2 w-full px-6 py-4 rounded-lg bg-primary hover:bg-primary-light text-white font-medium transition-all glow text-lg"
+              className="inline-flex items-center justify-center gap-2 w-full px-6 py-4 rounded-lg bg-primary hover:bg-primary-light text-white font-medium transition-all glow text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg"
             >
               Send an Email <FiArrowRight />
             </a>
