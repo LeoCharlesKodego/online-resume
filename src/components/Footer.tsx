@@ -18,7 +18,7 @@ const Footer = () => {
           <div className="flex items-center gap-4">
             <SocialIcon href="https://github.com/LeoCharlesKodego" icon={<FiGithub />} />
             <SocialIcon href="https://linkedin.com/in/leocharlesquibuyen" icon={<FiLinkedin />} />
-            <SocialIcon href="#" icon={<FiFacebook />} />
+            <SocialIcon href="https://www.facebook.com/leo.charles.868326" icon={<FiFacebook />} />
             <SocialIcon href="mailto:chryslee18@gmail.com" icon={<FiMail />} />
           </div>
         </div>

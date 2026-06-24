@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiMenu, FiX, FiDownload } from 'react-icons/fi';
+import { FiMenu, FiX } from 'react-icons/fi';
 
 const navLinks = [
   { name: 'Home', href: '#home' },
@@ -53,12 +53,6 @@ const Navbar = () => {
                 </a>
               ))}
             </div>
-            <a
-              href="#contact"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition-all glow text-sm font-medium"
-            >
-              <FiDownload /> Resume
-            </a>
           </div>
 
           {/* Mobile menu button */}

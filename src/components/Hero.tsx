@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { FiGithub, FiLinkedin, FiMail, FiFacebook, FiArrowRight } from 'react-icons/fi';
 
 const Hero = () => {
+  const profileImageUrl = `${import.meta.env.BASE_URL}profile.png`;
+
   return (
     <section id="home" className="min-h-screen flex items-center pt-20 overflow-hidden relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
@@ -15,9 +17,20 @@ const Hero = () => {
             className="flex flex-col space-y-6"
           >
             <div className="space-y-2">
-              <p className="text-primary font-mono text-sm md:text-base tracking-wider">
-                Hi, I'm
-              </p>
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-primary via-blue-500 to-cyan-400 blur opacity-60"></div>
+                  <img
+                    src={profileImageUrl}
+                    alt="Leo Charles Quibuyen"
+                    decoding="async"
+                    className="relative w-14 h-14 md:w-16 md:h-16 rounded-full object-cover border border-white/10"
+                  />
+                </div>
+                <p className="text-primary font-mono text-sm md:text-base tracking-wider">
+                  Hi, I'm
+                </p>
+              </div>
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white">
                 Leo Charles Quibuyen
               </h1>
@@ -51,7 +64,7 @@ const Hero = () => {
               <SocialLink href="https://github.com/LeoCharlesKodego" icon={<FiGithub size={20} />} label="GitHub" />
               <SocialLink href="https://linkedin.com/in/leocharlesquibuyen" icon={<FiLinkedin size={20} />} label="LinkedIn" />
               <SocialLink href="mailto:chryslee18@gmail.com" icon={<FiMail size={20} />} label="Email" />
-              <SocialLink href="#" icon={<FiFacebook size={20} />} label="Facebook" />
+              <SocialLink href="https://www.facebook.com/leo.charles.868326" icon={<FiFacebook size={20} />} label="Facebook" />
             </div>
           </motion.div>
 

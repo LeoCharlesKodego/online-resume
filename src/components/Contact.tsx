@@ -89,13 +89,6 @@ const Contact = () => {
             >
               Send an Email <FiArrowRight />
             </a>
-            
-            <a 
-              href="#" 
-              className="inline-block mt-4 text-sm text-slate-400 hover:text-white transition-colors"
-            >
-              Or download my Resume
-            </a>
           </motion.div>
         </div>
       </div>
