@@ -1,10 +1,8 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiGithub, FiExternalLink, FiStar, FiRefreshCw, FiFolder, FiAlertCircle } from 'react-icons/fi';
-import { useGitHubProjects } from '../hooks/useGitHubProjects';
-import type { ProjectData } from '../hooks/useGitHubProjects';
+import { FiGithub, FiExternalLink, FiCpu, FiCode } from 'react-icons/fi';
 
-/* ─── hardcoded backup (kept for reference until live version is confirmed) ──
-const staticProjects = [
+const projects = [
   {
     id: 1,
     title: 'GSO Inventory System',
@@ -66,128 +64,11 @@ const staticProjects = [
     demo: '#'
   }
 ];
-─────────────────────────────────────────────────────────────────── */
 
-/* ─── Loading skeleton ─────────────────────────────────────────── */
-function SkeletonCard() {
-  return (
-    <div className="glass-card overflow-hidden flex flex-col animate-pulse">
-      <div className="h-2 w-full bg-gradient-to-r from-primary/30 via-primary/10 to-primary/30" />
-      <div className="p-6 flex-grow flex flex-col">
-        <div className="h-7 bg-slate-700/50 rounded w-3/4 mb-3" />
-        <div className="h-4 bg-slate-700/50 rounded w-full mb-2" />
-        <div className="h-4 bg-slate-700/50 rounded w-5/6 mb-6" />
-        <div className="bg-slate-900/50 rounded-lg p-4 mb-6 border border-slate-800">
-          <div className="h-3 bg-slate-700/50 rounded w-1/4 mb-3" />
-          <div className="h-3 bg-slate-700/50 rounded w-3/4" />
-        </div>
-        <div className="flex flex-wrap gap-2 mb-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-5 bg-slate-700/50 rounded w-14" />
-          ))}
-        </div>
-        <div className="flex items-center gap-4 pt-4 border-t border-slate-800">
-          <div className="h-4 bg-slate-700/50 rounded w-24" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Project Card ─────────────────────────────────────────────── */
-function ProjectCard({ project }: { project: ProjectData }) {
-  const tags =
-    project.tech.length > 0
-      ? project.tech
-      : project.language
-        ? [project.language]
-        : [];
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.3 }}
-      className="glass-card overflow-hidden flex flex-col group"
-    >
-      {/* Accent bar */}
-      <div className="h-2 w-full bg-gradient-to-r from-primary via-primary-light to-blue-400" />
-
-      <div className="p-6 flex-grow flex flex-col">
-        {/* Title row with optional star count */}
-        <div className="flex items-start justify-between gap-3 mb-2">
-          <h3 className="text-2xl font-bold text-white">{project.title}</h3>
-          {project.stars > 0 && (
-            <span className="flex items-center gap-1 text-xs text-amber-400/80 whitespace-nowrap shrink-0 mt-1">
-              <FiStar size={14} className="fill-amber-400/80" />
-              {project.stars}
-            </span>
-          )}
-        </div>
-
-        <p className="text-slate-400 mb-6 flex-grow line-clamp-3">
-          {project.description}
-        </p>
-
-        {/* Metadata row */}
-        <div className="flex items-center gap-4 text-xs text-slate-500 mb-6">
-          {project.language && (
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-primary/60" />
-              {project.language}
-            </span>
-          )}
-          <span className="flex items-center gap-1.5">
-            <FiRefreshCw size={12} />
-            Updated {project.updatedAt}
-          </span>
-        </div>
-
-        {/* Tech tags */}
-        {tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-6">
-            {tags.map((t, i) => (
-              <span
-                key={i}
-                className="text-xs font-medium text-slate-400 bg-slate-800 px-2 py-1 rounded"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Footer links */}
-        <div className="flex items-center gap-4 mt-auto pt-4 border-t border-slate-800">
-          <a
-            href={project.github}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-slate-300 hover:text-white flex items-center gap-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg rounded"
-          >
-            <FiGithub size={18} /> Source Code
-          </a>
-          {project.demo && (
-            <a
-              href={project.demo}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:text-primary-light flex items-center gap-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg rounded"
-            >
-              <FiExternalLink size={18} /> Live Demo
-            </a>
-          )}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ─── Main component ───────────────────────────────────────────── */
 const Projects = () => {
-  const { projects, loading, error } = useGitHubProjects();
+  const [filter, setFilter] = useState<'vibe' | 'traditional'>('vibe');
+
+  const filteredProjects = projects.filter(p => p.type === filter);
 
   return (
     <section id="projects" className="py-24 relative">
@@ -199,53 +80,133 @@ const Projects = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Featured <span className="text-gradient">Projects</span>
-          </h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Featured <span className="text-gradient">Projects</span></h2>
           <p className="text-slate-400 max-w-2xl mx-auto">
-            Open-source repositories automatically synced from GitHub. Tag a repo
-            with <code className="text-primary">portfolio</code> to feature it here.
+            Showcasing a blend of traditional engineering depth and modern AI-accelerated workflows.
           </p>
         </motion.div>
 
-        {error && !loading && (
-          <div className="flex justify-center mb-8">
-            <span className="inline-flex items-center gap-2 text-xs text-amber-400/70 bg-amber-400/5 px-3 py-1.5 rounded-full border border-amber-400/10">
-              <FiAlertCircle size={12} />
-              {error}
-            </span>
+        <div className="flex justify-center mb-12">
+          <div className="glass p-1 rounded-lg inline-flex">
+            <button
+              onClick={() => setFilter('vibe')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${
+                filter === 'vibe' 
+                  ? 'bg-primary text-white shadow-lg' 
+                  : 'text-slate-400 hover:text-white'
+              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg`}
+            >
+              <FiCpu /> Vibe-Coded Projects
+            </button>
+            <button
+              onClick={() => setFilter('traditional')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${
+                filter === 'traditional' 
+                  ? 'bg-slate-700 text-white shadow-lg' 
+                  : 'text-slate-400 hover:text-white'
+              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg`}
+            >
+              <FiCode /> Traditional Development
+            </button>
           </div>
-        )}
+        </div>
 
         <motion.div layout className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {loading ? (
-            <>
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-            </>
-          ) : (
-            <AnimatePresence mode="popLayout">
-              {projects.length === 0 && !loading && !error ? (
-                <div className="col-span-full flex items-center justify-center p-12">
-                  <div className="glass rounded-2xl p-8 text-center max-w-md">
-                    <FiFolder size={40} className="mx-auto mb-4 text-slate-500" />
-                    <p className="text-slate-400 mb-2">
-                      No projects tagged with <code className="text-primary">portfolio</code> yet.
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      Add the topic to any GitHub repo to feature it here.
-                    </p>
+          <AnimatePresence mode="popLayout">
+            {filteredProjects.map((project) => (
+              <motion.div
+                key={project.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.3 }}
+                className="glass-card overflow-hidden flex flex-col group"
+              >
+                <div className="relative h-64 overflow-hidden">
+                  <div className="absolute inset-0 bg-slate-900/60 group-hover:bg-transparent transition-colors duration-500 z-10"></div>
+                  <img 
+                    src={project.image} 
+                    alt={project.title} 
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                  />
+                  <div className="absolute top-4 left-4 z-20 flex flex-wrap gap-2">
+                    {project.badges.map((badge, idx) => (
+                      <span key={idx} className={`px-2.5 py-1 rounded text-xs font-semibold backdrop-blur-md ${
+                        project.type === 'vibe' ? 'bg-purple-500/20 text-purple-200 border border-purple-500/30' : 'bg-blue-500/20 text-blue-200 border border-blue-500/30'
+                      }`}>
+                        {badge}
+                      </span>
+                    ))}
                   </div>
                 </div>
-              ) : (
-                projects.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
-                ))
-              )}
-            </AnimatePresence>
-          )}
+                
+                <div className="p-6 flex-grow flex flex-col">
+                  <h3 className="text-2xl font-bold text-white mb-2">{project.title}</h3>
+                  <p className="text-slate-400 mb-6 flex-grow">{project.description}</p>
+                  
+                  <div className="bg-slate-900/50 rounded-lg p-4 mb-6 border border-slate-800">
+                    {project.type === 'vibe' ? (
+                      <div className="space-y-3">
+                        <div>
+                          <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider block mb-1">AI Contribution</span>
+                          <span className="text-sm text-slate-300">{project.highlights.ai}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider block mb-1">Human Contribution</span>
+                          <span className="text-sm text-slate-300">{project.highlights.human}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div>
+                          <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider block mb-1">Architecture</span>
+                          <span className="text-sm text-slate-300">{project.highlights.architecture}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider block mb-1">Engineering Complexity</span>
+                          <span className="text-sm text-slate-300">{project.highlights.complexity}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {project.tech.map((t, i) => (
+                      <span key={i} className="text-xs font-medium text-slate-400 bg-slate-800 px-2 py-1 rounded">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-4 mt-auto pt-4 border-t border-slate-800">
+                    {project.github !== '#' && (
+                      <a
+                        href={project.github}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-slate-300 hover:text-white flex items-center gap-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg rounded"
+                      >
+                        <FiGithub size={18} /> Source Code
+                      </a>
+                    )}
+                    {project.demo !== '#' && (
+                      <a
+                        href={project.demo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:text-primary-light flex items-center gap-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg rounded"
+                      >
+                        <FiExternalLink size={18} /> Live Demo
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </motion.div>
       </div>
     </section>
