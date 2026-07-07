@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiGithub, FiExternalLink, FiCpu, FiCode, FiStar } from 'react-icons/fi';
+import { FiGithub, FiExternalLink, FiStar } from 'react-icons/fi';
 
 // ── CONFIG ──────────────────────────────────────────────────────────────
 const GITHUB_USERNAME = 'LeoCharlesKodego';
-const TOPIC_VIBE = 'vibe-coded';       // tag a repo with this topic → shows under "Vibe-Coded"
 const TOPIC_HIDE = 'hide-portfolio';   // tag a repo with this topic → excluded entirely
 const CACHE_KEY = 'gh_projects_cache_v1';
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
-type ProjectType = 'vibe' | 'traditional';
-
 interface PortfolioMeta {
+  title?: string;
   ai?: string;
   human?: string;
   architecture?: string;
@@ -25,7 +23,6 @@ interface Project {
   title: string;
   description: string;
   image: string;
-  type: ProjectType;
   tech: string[];
   badges: string[];
   stars: number;
@@ -46,21 +43,39 @@ const PINNED_PROJECTS: Project[] = [
     id: 'pinned-gso-system',
     title: 'GSO Inventory System',
     description:
-      'A comprehensive full-stack inventory management system designed to handle resource tracking, reporting, and equipment lifecycle management for a Philippine LGU General Services Office.',
+      'Architected and maintain a full-stack inventory management system for a Philippine Local Government Unit General Services Office, supporting end-to-end asset lifecycle tracking from procurement through disposal in compliance with COA reporting standards.',
     image: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&q=80&w=1000',
-    type: 'traditional',
     tech: ['React', 'Laravel', 'MySQL', 'Tailwind'],
-    badges: ['Traditional Development', 'Private Repository'],
+    badges: ['Private Repository'],
     stars: 0,
     language: 'PHP',
     updatedAt: new Date().toISOString(),
     highlights: {
-      architecture: 'Monolithic API with decoupled SPA frontend',
-      complexity: 'Complex relational database schema for item tracking and reporting',
+      architecture: 'Monolithic Laravel API with a decoupled React SPA frontend',
+      complexity: 'Relational database schema supporting item tracking, accountability documents (PAR/ICS), and compliance reporting',
     },
     github: '',
     demo: '',
     isPrivate: true,
+  },
+  {
+    id: 'pinned-learnhub',
+    title: 'LearnHub \u2014 Online Learning Platform',
+    description:
+      'A full-stack e-learning platform offering course catalogs across multiple disciplines (web development, programming, graphic design, photography, project management, social media marketing), with separate student and employee portals.',
+    image: 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?auto=format&fit=crop&q=80&w=1000',
+    tech: ['PHP', 'HTML/CSS', 'JavaScript', 'MySQL'],
+    badges: [],
+    stars: 0,
+    language: 'PHP',
+    updatedAt: new Date().toISOString(),
+    highlights: {
+      architecture: 'Custom PHP API backend with role-based access separating student and employee dashboards',
+      complexity: 'Built dedicated login/signup flows, course browsing, and dashboards for two distinct user roles',
+    },
+    github:
+      'https://github.com/LeoCharlesKodego/WD24P_Leo-Charles_Quibuyen/tree/main/LeoCharles_Quibuyen/MP2/LearnHub%20-%20MP2%20-',
+    demo: '',
   },
 ];
 
@@ -93,14 +108,8 @@ async function fetchPortfolioMeta(owner: string, repo: string, branch: string): 
   }
 }
 
-function classify(repo: GithubRepo): ProjectType {
-  return repo.topics?.includes(TOPIC_VIBE) ? 'vibe' : 'traditional';
-}
-
 function techTags(repo: GithubRepo): string[] {
-  const tags = (repo.topics || []).filter(
-    (t) => t !== TOPIC_VIBE && t !== TOPIC_HIDE
-  );
+  const tags = (repo.topics || []).filter((t) => t !== TOPIC_HIDE);
   if (tags.length > 0) return tags.slice(0, 6);
   return repo.language ? [repo.language] : [];
 }
@@ -125,20 +134,17 @@ async function loadProjects(): Promise<Project[]> {
 
   return visible.map((repo, i) => {
     const meta = metas[i] || {};
-    const type = classify(repo);
     return {
       id: repo.id,
-      title: repo.name
-        .replace(/[-_]/g, ' ')
-        .replace(/\b\w/g, (c) => c.toUpperCase()),
+      title:
+        meta.title ||
+        repo.name
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, (c) => c.toUpperCase()),
       description: repo.description || 'No description provided yet.',
       image: meta.image || `https://opengraph.githubassets.com/1/${GITHUB_USERNAME}/${repo.name}`,
-      type,
       tech: techTags(repo),
-      badges:
-        type === 'vibe'
-          ? ['Vibe Coded', 'AI Accelerated']
-          : ['Traditional Development'],
+      badges: [],
       stars: repo.stargazers_count,
       language: repo.language,
       updatedAt: repo.updated_at,
@@ -150,7 +156,6 @@ async function loadProjects(): Promise<Project[]> {
 }
 
 const Projects = () => {
-  const [filter, setFilter] = useState<ProjectType>('vibe');
   const [projects, setProjects] = useState<Project[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
@@ -197,8 +202,6 @@ const Projects = () => {
     };
   }, []);
 
-  const filteredProjects = projects.filter((p) => p.type === filter);
-
   return (
     <section id="projects" className="py-24 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -213,35 +216,9 @@ const Projects = () => {
             Featured <span className="text-gradient">Projects</span>
           </h2>
           <p className="text-slate-400 max-w-2xl mx-auto">
-            Showcasing a blend of traditional engineering depth and modern AI-accelerated workflows.
-            Pulled live from GitHub — create a new repo and it shows up here automatically.
+            A selection of systems I've designed, built, and maintained — pulled live from GitHub.
           </p>
         </motion.div>
-
-        <div className="flex justify-center mb-12">
-          <div className="glass p-1 rounded-lg inline-flex">
-            <button
-              onClick={() => setFilter('vibe')}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${
-                filter === 'vibe'
-                  ? 'bg-primary text-white shadow-lg'
-                  : 'text-slate-400 hover:text-white'
-              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg`}
-            >
-              <FiCpu /> Vibe-Coded Projects
-            </button>
-            <button
-              onClick={() => setFilter('traditional')}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${
-                filter === 'traditional'
-                  ? 'bg-slate-700 text-white shadow-lg'
-                  : 'text-slate-400 hover:text-white'
-              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg`}
-            >
-              <FiCode /> Traditional Development
-            </button>
-          </div>
-        </div>
 
         {status === 'loading' && projects.length === 0 && (
           <p className="text-center text-slate-500">Loading projects from GitHub…</p>
@@ -253,15 +230,9 @@ const Projects = () => {
           </p>
         )}
 
-        {!(status === 'loading' && projects.length === 0) && filteredProjects.length === 0 && status !== 'error' && (
-          <p className="text-center text-slate-500">
-            No {filter === 'vibe' ? 'vibe-coded' : 'traditional'} projects tagged yet.
-          </p>
-        )}
-
         <motion.div layout className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <AnimatePresence mode="popLayout">
-            {filteredProjects.map((project) => (
+            {projects.map((project) => (
               <motion.div
                 key={project.id}
                 layout
@@ -280,20 +251,18 @@ const Projects = () => {
                     decoding="async"
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                   />
-                  <div className="absolute top-4 left-4 z-20 flex flex-wrap gap-2">
-                    {project.badges.map((badge, idx) => (
-                      <span
-                        key={idx}
-                        className={`px-2.5 py-1 rounded text-xs font-semibold backdrop-blur-md ${
-                          project.type === 'vibe'
-                            ? 'bg-purple-500/20 text-purple-200 border border-purple-500/30'
-                            : 'bg-blue-500/20 text-blue-200 border border-blue-500/30'
-                        }`}
-                      >
-                        {badge}
-                      </span>
-                    ))}
-                  </div>
+                  {project.badges.length > 0 && (
+                    <div className="absolute top-4 left-4 z-20 flex flex-wrap gap-2">
+                      {project.badges.map((badge, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2.5 py-1 rounded text-xs font-semibold backdrop-blur-md bg-slate-800/70 text-slate-200 border border-slate-600/50"
+                        >
+                          {badge}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-6 flex-grow flex flex-col">
