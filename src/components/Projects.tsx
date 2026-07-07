@@ -77,6 +77,44 @@ const PINNED_PROJECTS: Project[] = [
       'https://github.com/LeoCharlesKodego/WD24P_Leo-Charles_Quibuyen/tree/main/LeoCharles_Quibuyen/MP2/LearnHub%20-%20MP2%20-',
     demo: '',
   },
+  {
+    id: 'pinned-church-manager',
+    title: 'Church Manager Offline App',
+    description:
+      'An offline-first desktop application for managing church activities, member records, and localized resources without requiring internet connectivity.',
+    image: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&q=80&w=1000',
+    tech: ['Electron', 'React', 'SQLite'],
+    badges: ['Private Repository'],
+    stars: 0,
+    language: 'JavaScript',
+    updatedAt: new Date().toISOString(),
+    highlights: {
+      architecture: 'Local-first desktop application with an embedded SQLite database and no external server dependency',
+      complexity: 'Designed offline state management and data-sync/conflict-resolution handling for a fully disconnected environment',
+    },
+    github: '',
+    demo: '',
+    isPrivate: true,
+  },
+  {
+    id: 'pinned-pkbgame',
+    title: 'Pickleball Championship (Unity)',
+    description:
+      'A Unity-based Android sports game built as a full systems clone of Virtua Tennis, adapted for pickleball gameplay, including ball physics, opponent AI, and shot mechanics.',
+    image: 'https://images.unsplash.com/photo-1568122506084-57d55f9914f2?auto=format&fit=crop&q=80&w=1000',
+    tech: ['Unity', 'C#', 'Android'],
+    badges: ['Private Repository'],
+    stars: 0,
+    language: 'C#',
+    updatedAt: new Date().toISOString(),
+    highlights: {
+      architecture: 'Unity-based mobile game with custom physics simulation and rule-based opponent AI',
+      complexity: 'Engineered realistic ball physics, bot decision-making, and positional shot-selection logic for varied gameplay',
+    },
+    github: '',
+    demo: '',
+    isPrivate: true,
+  },
 ];
 
 interface GithubRepo {
