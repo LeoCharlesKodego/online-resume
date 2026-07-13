@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiGithub, FiExternalLink, FiStar } from 'react-icons/fi';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { FiGithub, FiExternalLink, FiStar, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 // ── CONFIG ──────────────────────────────────────────────────────────────
 const GITHUB_USERNAME = 'LeoCharlesKodego';
-const TOPIC_HIDE = 'hide-portfolio';   // tag a repo with this topic → excluded entirely
+const TOPIC_HIDE = 'hide-portfolio';
 const CACHE_KEY = 'gh_projects_cache_v1';
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const POLL_INTERVAL_MS = 5 * 60 * 1000; // refresh every 5 min
 
 interface PortfolioMeta {
   title?: string;
@@ -34,17 +35,131 @@ interface Project {
   isPrivate?: boolean;
 }
 
+// ── CREATIVE SVG COVER GENERATOR ────────────────────────────────────────
+// Deterministic hash from string → unique gradient + pattern per project
+function hashStr(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+const PALETTES = [
+  ['#7C3AED', '#3B82F6'], // purple → blue
+  ['#EC4899', '#8B5CF6'], // pink → violet
+  ['#06B6D4', '#3B82F6'], // cyan → blue
+  ['#F59E0B', '#EF4444'], // amber → red
+  ['#10B981', '#06B6D4'], // emerald → cyan
+  ['#8B5CF6', '#EC4899'], // violet → pink
+  ['#3B82F6', '#10B981'], // blue → emerald
+  ['#EF4444', '#F59E0B'], // red → amber
+  ['#06B6D4', '#8B5CF6'], // cyan → violet
+  ['#F59E0B', '#10B981'], // amber → emerald
+];
+
+const LANG_SHAPES: Record<string, string> = {
+  JavaScript: 'M 30 20 L 50 10 L 70 20 L 70 40 L 50 50 L 30 40 Z', // hexagon
+  TypeScript: 'M 40 10 L 70 30 L 70 50 L 40 70 L 10 50 L 10 30 Z', // diamond
+  PHP: 'M 10 40 Q 40 10 70 40 Q 40 70 10 40 Z', // circle-ish
+  Python: 'M 40 10 C 60 10 70 25 70 40 C 70 60 55 70 40 70 C 25 70 10 55 10 40 C 10 20 25 10 40 10 Z', // blob
+  'C#': 'M 20 15 L 60 15 L 75 40 L 60 65 L 20 65 L 5 40 Z', // hexagon
+  Java: 'M 40 10 L 65 25 L 65 55 L 40 70 L 15 55 L 15 25 Z', // hexagon
+  HTML: 'M 15 10 L 65 10 L 75 40 L 65 70 L 15 70 L 5 40 Z', // shield
+  CSS: 'M 40 10 L 70 30 L 60 65 L 20 65 L 10 30 Z', // pentagon
+  Ruby: 'M 40 8 L 68 28 L 58 64 L 22 64 L 12 28 Z', // gem
+  Go: 'M 20 10 L 60 10 L 70 40 L 60 70 L 20 70 L 10 40 Z', // hex
+  Rust: 'M 40 10 C 60 10 70 30 70 45 C 70 65 55 70 40 70 C 25 70 10 55 10 40 C 10 25 20 10 40 10 Z', // circle
+  default: 'M 40 10 L 65 25 L 65 55 L 40 70 L 15 55 L 15 25 Z',
+};
+
+function generateProjectCover(project: { title: string; language: string | null; tech: string[] }): string {
+  const h = hashStr(project.title + (project.language || ''));
+  const palette = PALETTES[h % PALETTES.length];
+  const [c1, c2] = palette;
+  const lang = project.language || project.tech[0] || 'default';
+  const shape = LANG_SHAPES[lang] || LANG_SHAPES.default;
+
+  // Pattern params from hash
+  const patternType = h % 4; // 0=dots, 1=grid, 2=lines, 3=circles
+  const offsetX = (h % 60) + 20;
+  const offsetY = ((h >> 6) % 60) + 20;
+  const rot = (h % 360);
+
+  // Small decorative circles
+  const circles = Array.from({ length: 5 }, (_, i) => {
+    const cx = ((h * (i + 3)) % 70) + 15;
+    const cy = ((h * (i + 7)) % 55) + 15;
+    const r = ((h * (i + 1)) % 4) + 1.5;
+    const opacity = 0.15 + ((h * (i + 2)) % 20) / 100;
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" opacity="${opacity}"/>`;
+  }).join('');
+
+  // Pattern overlay
+  let pattern = '';
+  if (patternType === 0) {
+    // Dots
+    pattern = `<pattern id="dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="0.8" fill="white" opacity="0.08"/>
+    </pattern><rect width="80" height="80" fill="url(#dots)"/>`;
+  } else if (patternType === 1) {
+    // Grid
+    pattern = `<pattern id="grid" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" stroke-width="0.3" opacity="0.08"/>
+    </pattern><rect width="80" height="80" fill="url(#grid)"/>`;
+  } else if (patternType === 2) {
+    // Diagonal lines
+    pattern = `<pattern id="lines" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="8" stroke="white" stroke-width="0.4" opacity="0.07"/>
+    </pattern><rect width="80" height="80" fill="url(#lines)"/>`;
+  } else {
+    // Concentric circles
+    pattern = Array.from({ length: 4 }, (_, i) => {
+      const r = 10 + i * 8;
+      return `<circle cx="40" cy="40" r="${r}" fill="none" stroke="white" stroke-width="0.3" opacity="${0.06 + i * 0.01}"/>`;
+    }).join('');
+  }
+
+  // Tech initials (top 2 techs)
+  const techInitials = project.tech.slice(0, 2).map(t => t.charAt(0).toUpperCase()).join('');
+  const fontSize = techInitials.length > 1 ? 8 : 10;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${c1}"/>
+      <stop offset="100%" stop-color="${c2}"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="80" height="80" fill="url(#bg)"/>
+  <rect width="80" height="80" fill="url(#glow)"/>
+  ${pattern}
+  <g transform="translate(${offsetX - 40}, ${offsetY - 40}) rotate(${rot / 10}, 40, 40)" opacity="0.2">
+    <path d="${shape}" fill="none" stroke="white" stroke-width="1.2"/>
+  </g>
+  <g transform="translate(${offsetX + 10}, ${offsetY + 5}) rotate(${-rot / 8}, 40, 40)" opacity="0.12">
+    <path d="${shape}" fill="white" fill-opacity="0.1"/>
+  </g>
+  ${circles}
+  <text x="40" y="43" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="${fontSize}" fill="white" opacity="0.9">${techInitials}</text>
+  <text x="40" y="54" text-anchor="middle" font-family="Inter,sans-serif" font-weight="400" font-size="3.5" fill="white" opacity="0.5">${lang}</text>
+</svg>`;
+
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
 // ── PINNED / MANUAL PROJECTS ────────────────────────────────────────────
-// Private repos can't be fetched from the public GitHub API, so list them
-// here manually. Everything else (public repos) is pulled in automatically
-// further down — you don't need to touch this file for those.
 const PINNED_PROJECTS: Project[] = [
   {
     id: 'pinned-gso-system',
     title: 'GSO Inventory System',
     description:
       'Architected and maintain a full-stack inventory management system for a Philippine Local Government Unit General Services Office, supporting end-to-end asset lifecycle tracking from procurement through disposal in compliance with COA reporting standards.',
-    image: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&q=80&w=1000',
+    image: '',
     tech: ['React', 'Laravel', 'MySQL', 'Tailwind'],
     badges: ['Private Repository'],
     stars: 0,
@@ -60,10 +175,10 @@ const PINNED_PROJECTS: Project[] = [
   },
   {
     id: 'pinned-learnhub',
-    title: 'LearnHub \u2014 Online Learning Platform',
+    title: 'LearnHub — Online Learning Platform',
     description:
       'A full-stack e-learning platform offering course catalogs across multiple disciplines (web development, programming, graphic design, photography, project management, social media marketing), with separate student and employee portals.',
-    image: 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?auto=format&fit=crop&q=80&w=1000',
+    image: '',
     tech: ['PHP', 'HTML/CSS', 'JavaScript', 'MySQL'],
     badges: [],
     stars: 0,
@@ -82,7 +197,7 @@ const PINNED_PROJECTS: Project[] = [
     title: 'Church Manager Offline App',
     description:
       'An offline-first desktop application for managing church activities, member records, and localized resources without requiring internet connectivity.',
-    image: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&q=80&w=1000',
+    image: '',
     tech: ['Electron', 'React', 'SQLite'],
     badges: ['Private Repository'],
     stars: 0,
@@ -101,7 +216,7 @@ const PINNED_PROJECTS: Project[] = [
     title: 'Pickleball Championship (Unity)',
     description:
       'A Unity-based Android sports game built as a full systems clone of Virtua Tennis, adapted for pickleball gameplay, including ball physics, opponent AI, and shot mechanics.',
-    image: 'https://images.unsplash.com/photo-1568122506084-57d55f9914f2?auto=format&fit=crop&q=80&w=1000',
+    image: '',
     tech: ['Unity', 'C#', 'Android'],
     badges: ['Private Repository'],
     stars: 0,
@@ -116,6 +231,12 @@ const PINNED_PROJECTS: Project[] = [
     isPrivate: true,
   },
 ];
+
+// Assign creative covers to pinned projects on load
+const PINNED_WITH_COVERS: Project[] = PINNED_PROJECTS.map((p) => ({
+  ...p,
+  image: generateProjectCover(p),
+}));
 
 interface GithubRepo {
   id: number;
@@ -132,8 +253,6 @@ interface GithubRepo {
   updated_at: string;
 }
 
-// Try to fetch an optional portfolio.json from the repo root for custom highlight text.
-// Silently returns null if it doesn't exist — this is a nice-to-have, not a requirement.
 async function fetchPortfolioMeta(owner: string, repo: string, branch: string): Promise<PortfolioMeta | null> {
   try {
     const res = await fetch(
@@ -165,26 +284,29 @@ async function loadProjects(): Promise<Project[]> {
     (r) => !r.fork && !r.archived && !r.topics?.includes(TOPIC_HIDE)
   );
 
-  // Fetch optional portfolio.json metadata for each repo in parallel.
   const metas = await Promise.all(
     visible.map((r) => fetchPortfolioMeta(GITHUB_USERNAME, r.name, r.default_branch))
   );
 
   return visible.map((repo, i) => {
     const meta = metas[i] || {};
+    const title =
+      meta.title ||
+      repo.name
+        .replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    const tech = techTags(repo);
+    const lang = repo.language;
+
     return {
       id: repo.id,
-      title:
-        meta.title ||
-        repo.name
-          .replace(/[-_]/g, ' ')
-          .replace(/\b\w/g, (c) => c.toUpperCase()),
+      title,
       description: repo.description || 'No description provided yet.',
-      image: meta.image || `https://opengraph.githubassets.com/1/${GITHUB_USERNAME}/${repo.name}`,
-      tech: techTags(repo),
+      image: meta.image || generateProjectCover({ title, language: lang, tech }),
+      tech,
       badges: [],
       stars: repo.stargazers_count,
-      language: repo.language,
+      language: lang,
       updatedAt: repo.updated_at,
       highlights: meta,
       github: repo.html_url,
@@ -193,55 +315,100 @@ async function loadProjects(): Promise<Project[]> {
   });
 }
 
+// ── CAROUSEL COMPONENT ──────────────────────────────────────────────────
 const Projects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [cardsPerView, setCardsPerView] = useState(3);
 
+  // Responsive cards per view
+  useEffect(() => {
+    function updateCardsPerView() {
+      const w = window.innerWidth;
+      if (w < 640) setCardsPerView(1);
+      else if (w < 1024) setCardsPerView(2);
+      else setCardsPerView(3);
+    }
+    updateCardsPerView();
+    window.addEventListener('resize', updateCardsPerView);
+    return () => window.removeEventListener('resize', updateCardsPerView);
+  }, []);
+
+  const maxIndex = Math.max(0, projects.length - cardsPerView);
+
+  const goTo = useCallback(
+    (idx: number) => {
+      setCurrentIndex(Math.max(0, Math.min(idx, maxIndex)));
+    },
+    [maxIndex]
+  );
+
+  const goNext = useCallback(() => goTo(currentIndex + 1), [currentIndex, goTo]);
+  const goPrev = useCallback(() => goTo(currentIndex - 1), [currentIndex, goTo]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowRight') goNext();
+      if (e.key === 'ArrowLeft') goPrev();
+    }
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [goNext, goPrev]);
+
+  // ── DATA LOADING + REAL-TIME POLLING ──────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
-    async function run() {
-      // Serve from cache instantly if it's fresh, then refresh in the background.
+    async function run(isPoll = false) {
       try {
-        const cached = sessionStorage.getItem(CACHE_KEY);
-        if (cached) {
-          const { data, ts } = JSON.parse(cached);
-          if (Date.now() - ts < CACHE_TTL_MS) {
-            setProjects([...PINNED_PROJECTS, ...data]);
-            setStatus('ready');
+        if (!isPoll) {
+          const cached = sessionStorage.getItem(CACHE_KEY);
+          if (cached) {
+            const { data, ts } = JSON.parse(cached);
+            if (Date.now() - ts < CACHE_TTL_MS) {
+              setProjects([...PINNED_WITH_COVERS, ...data]);
+              setStatus('ready');
+            }
           }
         }
-      } catch {
-        // ignore cache read errors
-      }
 
-      try {
         const fetched = await loadProjects();
         if (cancelled) return;
-        setProjects([...PINNED_PROJECTS, ...fetched]);
+        setProjects([...PINNED_WITH_COVERS, ...fetched]);
         setStatus('ready');
         try {
           sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data: fetched, ts: Date.now() }));
         } catch {
-          // ignore cache write errors (e.g. storage full/disabled)
+          // ignore
         }
       } catch (err) {
         if (cancelled) return;
-        // If GitHub fetch fails, still show pinned projects rather than nothing.
-        setProjects((prev) => (prev.length > 0 ? prev : PINNED_PROJECTS));
+        setProjects((prev) => (prev.length > 0 ? prev : PINNED_WITH_COVERS));
         setStatus((prev) => (prev === 'ready' ? 'ready' : 'error'));
         console.error('Failed to load GitHub projects:', err);
       }
     }
 
     run();
+    const interval = setInterval(() => run(true), POLL_INTERVAL_MS);
+
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
   }, []);
 
+  // Reset index if projects shrink
+  useEffect(() => {
+    if (currentIndex > maxIndex) setCurrentIndex(maxIndex);
+  }, [currentIndex, maxIndex]);
+
   return (
-    <section id="projects" className="py-24 relative">
+    <section id="projects" className="py-24 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -259,7 +426,18 @@ const Projects = () => {
         </motion.div>
 
         {status === 'loading' && projects.length === 0 && (
-          <p className="text-center text-slate-500">Loading projects from GitHub…</p>
+          <div className="flex gap-6 overflow-hidden">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="min-w-[340px] h-[420px] glass-card animate-pulse">
+                <div className="h-48 bg-slate-800/50 rounded-t-2xl" />
+                <div className="p-6 space-y-3">
+                  <div className="h-5 bg-slate-800/50 rounded w-3/4" />
+                  <div className="h-3 bg-slate-800/50 rounded w-full" />
+                  <div className="h-3 bg-slate-800/50 rounded w-2/3" />
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
         {status === 'error' && projects.length === 0 && (
@@ -268,141 +446,212 @@ const Projects = () => {
           </p>
         )}
 
-        <motion.div layout className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <AnimatePresence mode="popLayout">
-            {projects.map((project) => (
+        {projects.length > 0 && (
+          <div className="relative group/carousel">
+            {/* Navigation arrows */}
+            <button
+              onClick={goPrev}
+              disabled={currentIndex === 0}
+              className="absolute -left-4 lg:-left-6 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-dark-card/90 border border-dark-border/60 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:shadow-none"
+              aria-label="Previous projects"
+            >
+              <FiChevronLeft size={20} />
+            </button>
+
+            <button
+              onClick={goNext}
+              disabled={currentIndex >= maxIndex}
+              className="absolute -right-4 lg:-right-6 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-dark-card/90 border border-dark-border/60 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:shadow-none"
+              aria-label="Next projects"
+            >
+              <FiChevronRight size={20} />
+            </button>
+
+            {/* Carousel track */}
+            <div
+              ref={carouselRef}
+              className="overflow-hidden cursor-grab active:cursor-grabbing"
+              onMouseDown={() => setIsDragging(true)}
+              onMouseUp={() => setIsDragging(false)}
+              onMouseLeave={() => setIsDragging(false)}
+            >
               <motion.div
-                key={project.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-                className="glass-card overflow-hidden flex flex-col group"
+                className="flex gap-6"
+                animate={{ x: `${-(currentIndex * (100 / cardsPerView) + currentIndex * (24 / cardsPerView))}%` }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 300,
+                  damping: 30,
+                }}
+                drag="x"
+                dragConstraints={{
+                  left: -((projects.length - cardsPerView) * (100 / cardsPerView + 24 / cardsPerView)),
+                  right: 0,
+                }}
+                dragElastic={0.1}
+                onDragEnd={(_, info) => {
+                  setIsDragging(false);
+                  const swipeThreshold = 50;
+                  if (info.offset.x < -swipeThreshold) goNext();
+                  else if (info.offset.x > swipeThreshold) goPrev();
+                }}
+                style={{ width: `${(projects.length / cardsPerView) * 100}%` }}
               >
-                <div className="relative h-64 overflow-hidden">
-                  <div className="absolute inset-0 bg-slate-900/60 group-hover:bg-transparent transition-colors duration-500 z-10"></div>
-                  <img
-                    src={project.image}
-                    alt={project.title}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                  />
-                  {project.badges.length > 0 && (
-                    <div className="absolute top-4 left-4 z-20 flex flex-wrap gap-2">
-                      {project.badges.map((badge, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2.5 py-1 rounded text-xs font-semibold backdrop-blur-md bg-slate-800/70 text-slate-200 border border-slate-600/50"
-                        >
-                          {badge}
-                        </span>
-                      ))}
+                {projects.map((project, idx) => (
+                  <motion.div
+                    key={project.id}
+                    className="glass-card overflow-hidden flex flex-col group"
+                    style={{ minWidth: `calc(${100 / projects.length * cardsPerView}% - ${(cardsPerView - 1) * 24 / cardsPerView}px)` }}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: idx * 0.05 }}
+                    whileHover={!isDragging ? { y: -6, scale: 1.02 } : {}}
+                  >
+                    {/* Creative SVG cover */}
+                    <div className="relative h-52 overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-t from-dark-card/80 via-transparent to-transparent z-10" />
+                      <img
+                        src={project.image}
+                        alt={project.title}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                      />
+                      {project.badges.length > 0 && (
+                        <div className="absolute top-3 left-3 z-20 flex flex-wrap gap-2">
+                          {project.badges.map((badge, bIdx) => (
+                            <span
+                              key={bIdx}
+                              className="px-2.5 py-1 rounded text-xs font-semibold backdrop-blur-md bg-slate-800/70 text-slate-200 border border-slate-600/50"
+                            >
+                              {badge}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="p-6 flex-grow flex flex-col">
-                  <h3 className="text-2xl font-bold text-white mb-2">{project.title}</h3>
-                  <p className="text-slate-400 mb-6 flex-grow">{project.description}</p>
+                    <div className="p-5 flex-grow flex flex-col">
+                      <h3 className="text-lg font-bold text-white mb-2 line-clamp-1">{project.title}</h3>
+                      <p className="text-slate-400 text-sm mb-4 flex-grow line-clamp-3">{project.description}</p>
 
-                  <div className="bg-slate-900/50 rounded-lg p-4 mb-6 border border-slate-800">
-                    {project.highlights.ai || project.highlights.human ? (
-                      <div className="space-y-3">
-                        {project.highlights.ai && (
-                          <div>
-                            <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider block mb-1">
-                              AI Contribution
-                            </span>
-                            <span className="text-sm text-slate-300">{project.highlights.ai}</span>
+                      <div className="bg-slate-900/50 rounded-lg p-3 mb-4 border border-slate-800 text-sm">
+                        {project.highlights.ai || project.highlights.human ? (
+                          <div className="space-y-2">
+                            {project.highlights.ai && (
+                              <div>
+                                <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider block mb-0.5">
+                                  AI Contribution
+                                </span>
+                                <span className="text-xs text-slate-300">{project.highlights.ai}</span>
+                              </div>
+                            )}
+                            {project.highlights.human && (
+                              <div>
+                                <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider block mb-0.5">
+                                  Human Contribution
+                                </span>
+                                <span className="text-xs text-slate-300">{project.highlights.human}</span>
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {project.highlights.human && (
-                          <div>
-                            <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider block mb-1">
-                              Human Contribution
+                        ) : project.highlights.architecture || project.highlights.complexity ? (
+                          <div className="space-y-2">
+                            {project.highlights.architecture && (
+                              <div>
+                                <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider block mb-0.5">
+                                  Architecture
+                                </span>
+                                <span className="text-xs text-slate-300">{project.highlights.architecture}</span>
+                              </div>
+                            )}
+                            {project.highlights.complexity && (
+                              <div>
+                                <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider block mb-0.5">
+                                  Engineering Complexity
+                                </span>
+                                <span className="text-xs text-slate-300">{project.highlights.complexity}</span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3 text-xs text-slate-300">
+                            <span className="flex items-center gap-1">
+                              <FiStar className="text-amber-400" /> {project.stars}
                             </span>
-                            <span className="text-sm text-slate-300">{project.highlights.human}</span>
+                            {project.language && <span>{project.language}</span>}
+                            <span className="text-slate-500">
+                              {new Date(project.updatedAt).toLocaleDateString()}
+                            </span>
                           </div>
                         )}
                       </div>
-                    ) : project.highlights.architecture || project.highlights.complexity ? (
-                      <div className="space-y-3">
-                        {project.highlights.architecture && (
-                          <div>
-                            <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider block mb-1">
-                              Architecture
-                            </span>
-                            <span className="text-sm text-slate-300">{project.highlights.architecture}</span>
-                          </div>
+
+                      <div className="flex flex-wrap gap-1.5 mb-4">
+                        {project.tech.map((t, i) => (
+                          <span
+                            key={i}
+                            className="text-xs font-medium text-slate-400 bg-slate-800 px-2 py-0.5 rounded"
+                          >
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-3 mt-auto pt-3 border-t border-slate-800">
+                        {project.isPrivate ? (
+                          <span className="text-slate-500 flex items-center gap-1.5 text-xs font-medium">
+                            <FiGithub size={14} /> Private
+                          </span>
+                        ) : (
+                          project.github && (
+                            <a
+                              href={project.github}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded"
+                            >
+                              <FiGithub size={14} /> Source
+                            </a>
+                          )
                         )}
-                        {project.highlights.complexity && (
-                          <div>
-                            <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider block mb-1">
-                              Engineering Complexity
-                            </span>
-                            <span className="text-sm text-slate-300">{project.highlights.complexity}</span>
-                          </div>
+                        {project.demo && (
+                          <a
+                            href={project.demo}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:text-primary-light flex items-center gap-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded"
+                          >
+                            <FiExternalLink size={14} /> Demo
+                          </a>
                         )}
                       </div>
-                    ) : (
-                      <div className="flex items-center gap-4 text-sm text-slate-300">
-                        <span className="flex items-center gap-1">
-                          <FiStar className="text-amber-400" /> {project.stars}
-                        </span>
-                        {project.language && <span>{project.language}</span>}
-                        <span className="text-slate-500">
-                          Updated {new Date(project.updatedAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {project.tech.map((t, i) => (
-                      <span
-                        key={i}
-                        className="text-xs font-medium text-slate-400 bg-slate-800 px-2 py-1 rounded"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-4 mt-auto pt-4 border-t border-slate-800">
-                    {project.isPrivate ? (
-                      <span className="text-slate-500 flex items-center gap-2 text-sm font-medium">
-                        <FiGithub size={18} /> Private Repository
-                      </span>
-                    ) : (
-                      project.github && (
-                        <a
-                          href={project.github}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-slate-300 hover:text-white flex items-center gap-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg rounded"
-                        >
-                          <FiGithub size={18} /> Source Code
-                        </a>
-                      )
-                    )}
-                    {project.demo && (
-                      <a
-                        href={project.demo}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:text-primary-light flex items-center gap-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg rounded"
-                      >
-                        <FiExternalLink size={18} /> Live Demo
-                      </a>
-                    )}
-                  </div>
-                </div>
+                    </div>
+                  </motion.div>
+                ))}
               </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
+            </div>
+
+            {/* Dot indicators */}
+            {maxIndex > 0 && (
+              <div className="flex justify-center gap-2 mt-8">
+                {Array.from({ length: maxIndex + 1 }, (_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => goTo(i)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      i === currentIndex
+                        ? 'w-8 bg-primary shadow-lg shadow-primary/30'
+                        : 'w-2 bg-slate-600 hover:bg-slate-500'
+                    }`}
+                    aria-label={`Go to slide ${i + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
