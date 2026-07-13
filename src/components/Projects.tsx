@@ -9,7 +9,7 @@ const CACHE_KEY = 'gh_projects_cache_v2';
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
 // Repos already listed as pinned — exclude from API results to avoid duplicates
-const PINNED_NAMES = new Set(['MINUTES-MAKER']);
+const PINNED_NAMES = new Set(['MINUTES-MAKER', 'yogurt-e-hauz']);
 
 interface PortfolioMeta {
   title?: string;
@@ -229,6 +229,24 @@ const PINNED_PROJECTS: Project[] = [
     demo: '',
     isPrivate: true,
   },
+  {
+    id: 'pinned-yogurt-e-hauz',
+    title: 'Yogurt E-Hauz',
+    description:
+      'A full-stack e-commerce website for a local yogurt shop — complete with an online menu catalog, custom order builder, cart management, and a contact/feedback system, built to bring a small brick-and-mortar business into the digital space.',
+    image: '',
+    tech: ['PHP', 'HTML/CSS', 'JavaScript', 'MySQL'],
+    badges: [],
+    stars: 0,
+    language: 'PHP',
+    updatedAt: new Date().toISOString(),
+    highlights: {
+      architecture: 'Server-rendered PHP application with MySQL backend and a responsive frontend designed for mobile-first browsing',
+      complexity: 'Designed product catalog with customizable topping combinations, session-based cart, and form validation for order placement',
+    },
+    github: 'https://github.com/LeoCharlesKodego/yogurt-e-hauz',
+    demo: '',
+  },
 ];
 
 const PINNED_WITH_COVERS: Project[] = PINNED_PROJECTS.map((p) => ({
@@ -327,7 +345,7 @@ const Projects = () => {
 
   const goNext = useCallback(() => {
     const snapped = snapTo(rotationRef.current);
-    const next = snapped + ANGLE_STEP;
+    const next = snapped - ANGLE_STEP;
     rotationRef.current = next;
     setRotation(next);
     // Pause auto-rotate for 8s after manual interaction
@@ -338,7 +356,7 @@ const Projects = () => {
 
   const goPrev = useCallback(() => {
     const snapped = snapTo(rotationRef.current);
-    const prev = snapped - ANGLE_STEP;
+    const prev = snapped + ANGLE_STEP;
     rotationRef.current = prev;
     setRotation(prev);
     setIsPaused(true);
@@ -631,7 +649,8 @@ const Projects = () => {
                     <button
                       key={i}
                       onClick={() => {
-                        const target = snapTo(rotation) - ANGLE_STEP * i;
+                        // Set rotation so card i is at angle 0 (front)
+                        const target = -(ANGLE_STEP * i);
                         rotationRef.current = target;
                         setRotation(target);
                         setIsPaused(true);
