@@ -5,7 +5,7 @@ import { FiGithub, FiExternalLink, FiStar, FiChevronLeft, FiChevronRight } from 
 // ── CONFIG ──────────────────────────────────────────────────────────────
 const GITHUB_USERNAME = 'LeoCharlesKodego';
 const TOPIC_HIDE = 'hide-portfolio';
-const CACHE_KEY = 'gh_projects_cache_v1';
+const CACHE_KEY = 'gh_projects_cache_v2';
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
 
