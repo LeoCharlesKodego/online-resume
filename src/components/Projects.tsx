@@ -506,7 +506,7 @@ const Projects = () => {
 
             {/* 3D Carousel */}
             <div
-              className="relative mx-auto overflow-visible"
+              className="relative mx-auto overflow-visible mt-8"
               style={{
                 perspective: '1200px',
                 perspectiveOrigin: '50% 50%',
