@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { FiGithub, FiExternalLink, FiStar, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
@@ -8,6 +8,8 @@ const TOPIC_HIDE = 'hide-portfolio';
 const CACHE_KEY = 'gh_projects_cache_v2';
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
+// Repos already listed as pinned — exclude from API results to avoid duplicates
+const PINNED_NAMES = new Set(['MINUTES-MAKER']);
 
 interface PortfolioMeta {
   title?: string;
@@ -208,6 +210,25 @@ const PINNED_PROJECTS: Project[] = [
     demo: '',
     isPrivate: true,
   },
+  {
+    id: 'pinned-minutes-maker',
+    title: 'Minutes Maker',
+    description:
+      'A Flutter-based Android application that automates meeting documentation — record audio directly on-device, transcribe speech in real-time, and generate structured meeting minutes with AI-assisted summarization, eliminating the need for manual note-taking.',
+    image: '',
+    tech: ['Flutter', 'Dart', 'AI/ML', 'Android'],
+    badges: ['Private Repository'],
+    stars: 0,
+    language: 'Dart',
+    updatedAt: new Date().toISOString(),
+    highlights: {
+      architecture: 'Flutter cross-platform app with on-device speech recognition pipeline and AI-powered text summarization',
+      complexity: 'Integrated real-time audio recording, speech-to-text transcription, and LLM-assisted minutes generation into a single offline-capable workflow',
+    },
+    github: '',
+    demo: '',
+    isPrivate: true,
+  },
 ];
 
 const PINNED_WITH_COVERS: Project[] = PINNED_PROJECTS.map((p) => ({
@@ -253,7 +274,7 @@ async function loadProjects(): Promise<Project[]> {
   if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
   const repos: GithubRepo[] = await res.json();
 
-  const visible = repos.filter((r) => !r.fork && !r.archived && !r.topics?.includes(TOPIC_HIDE));
+  const visible = repos.filter((r) => !r.fork && !r.archived && !r.topics?.includes(TOPIC_HIDE) && !PINNED_NAMES.has(r.name));
   const metas = await Promise.all(visible.map((r) => fetchPortfolioMeta(GITHUB_USERNAME, r.name, r.default_branch)));
 
   return visible.map((repo, i) => {
@@ -283,7 +304,11 @@ async function loadProjects(): Promise<Project[]> {
 const Projects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [rotation, setRotation] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const rotationRef = useRef(0);
+  const lastTimeRef = useRef(0);
+  const pausedTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const n = projects.length;
 
@@ -291,16 +316,54 @@ const Projects = () => {
   const CARD_WIDTH = 340;
   const ANGLE_STEP = n > 0 ? 360 / n : 0;
   const RADIUS = n > 2 ? CARD_WIDTH / (2 * Math.tan(Math.PI / n)) : 500;
+  const SPEED = 12; // degrees per second
+
+  // Snap to nearest card
+  const snapTo = useCallback((targetRotation: number) => {
+    if (n === 0) return 0;
+    const snapped = Math.round(targetRotation / ANGLE_STEP) * ANGLE_STEP;
+    return snapped;
+  }, [n, ANGLE_STEP]);
 
   const goNext = useCallback(() => {
-    if (n === 0) return;
-    setActiveIndex((prev) => (prev + 1) % n);
-  }, [n]);
+    const snapped = snapTo(rotationRef.current);
+    const next = snapped + ANGLE_STEP;
+    rotationRef.current = next;
+    setRotation(next);
+    // Pause auto-rotate for 8s after manual interaction
+    setIsPaused(true);
+    clearTimeout(pausedTimeoutRef.current);
+    pausedTimeoutRef.current = setTimeout(() => setIsPaused(false), 8000);
+  }, [n, ANGLE_STEP, snapTo]);
 
   const goPrev = useCallback(() => {
-    if (n === 0) return;
-    setActiveIndex((prev) => (prev - 1 + n) % n);
-  }, [n]);
+    const snapped = snapTo(rotationRef.current);
+    const prev = snapped - ANGLE_STEP;
+    rotationRef.current = prev;
+    setRotation(prev);
+    setIsPaused(true);
+    clearTimeout(pausedTimeoutRef.current);
+    pausedTimeoutRef.current = setTimeout(() => setIsPaused(false), 8000);
+  }, [n, ANGLE_STEP, snapTo]);
+
+  // Continuous rotation via requestAnimationFrame
+  useEffect(() => {
+    if (n < 3 || isPaused) return;
+
+    let raf: number;
+    const animate = (time: number) => {
+      if (lastTimeRef.current === 0) lastTimeRef.current = time;
+      const delta = (time - lastTimeRef.current) / 1000;
+      lastTimeRef.current = time;
+      rotationRef.current += SPEED * delta;
+      setRotation(rotationRef.current);
+      raf = requestAnimationFrame(animate);
+    };
+
+    lastTimeRef.current = 0;
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, [n, isPaused]);
 
   // Keyboard
   useEffect(() => {
@@ -311,13 +374,6 @@ const Projects = () => {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [goNext, goPrev]);
-
-  // Auto-rotate
-  useEffect(() => {
-    if (n < 3) return;
-    const id = setInterval(goNext, 5000);
-    return () => clearInterval(id);
-  }, [goNext, n]);
 
   // Data loading + polling
   useEffect(() => {
@@ -355,17 +411,15 @@ const Projects = () => {
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
-  // Compute per-card transforms & opacity
+  // Compute per-card transforms & opacity from continuous rotation
   const cardStyles = useMemo(() => {
     return projects.map((_, i) => {
-      const angle = ANGLE_STEP * (i - activeIndex);
-      const rad = (angle * Math.PI) / 180;
-      // Scale: front=1, sides ~0.7, back ~0.5
+      const angle = rotation + ANGLE_STEP * i;
+      const normalised = ((angle % 360) + 360) % 360;
+      const rad = (normalised * Math.PI) / 180;
       const cosVal = Math.cos(rad);
       const scale = 0.55 + 0.45 * Math.max(0, cosVal);
-      // Opacity: front=1, sides ~0.6, back ~0.2
       const opacity = 0.2 + 0.8 * Math.max(0, cosVal);
-      // z-index by depth
       const zIndex = Math.round(50 + cosVal * 50);
 
       return {
@@ -374,7 +428,7 @@ const Projects = () => {
         zIndex,
       };
     });
-  }, [projects, activeIndex, ANGLE_STEP, RADIUS]);
+  }, [projects, rotation, ANGLE_STEP, RADIUS]);
 
   return (
     <section id="projects" className="py-24 relative overflow-hidden">
@@ -568,18 +622,31 @@ const Projects = () => {
             {/* Dot indicators */}
             {n > 1 && (
               <div className="flex justify-center gap-2 mt-6">
-                {projects.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveIndex(i)}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      i === activeIndex
-                        ? 'w-8 bg-primary shadow-lg shadow-primary/30'
-                        : 'w-2 bg-slate-600 hover:bg-slate-500'
-                    }`}
-                    aria-label={`Go to project ${i + 1}`}
-                  />
-                ))}
+                {projects.map((_, i) => {
+                  // Compute which card is closest to front
+                  const cardAngle = ((rotation + ANGLE_STEP * i) % 360 + 360) % 360;
+                  const dist = cardAngle > 180 ? 360 - cardAngle : cardAngle;
+                  const isActive = dist < ANGLE_STEP / 2;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        const target = snapTo(rotation) - ANGLE_STEP * i;
+                        rotationRef.current = target;
+                        setRotation(target);
+                        setIsPaused(true);
+                        clearTimeout(pausedTimeoutRef.current);
+                        pausedTimeoutRef.current = setTimeout(() => setIsPaused(false), 8000);
+                      }}
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        isActive
+                          ? 'w-8 bg-primary shadow-lg shadow-primary/30'
+                          : 'w-2 bg-slate-600 hover:bg-slate-500'
+                      }`}
+                      aria-label={`Go to project ${i + 1}`}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
